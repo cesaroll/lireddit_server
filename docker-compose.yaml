@@ -2,18 +2,20 @@ version: "3.7"
 services:
   db:
     image: postgres
+    container_name: lireddit-postgresql
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
-      POSTGRES_DB: lireditt
+      POSTGRES_DB: lireddit
     volumes:
-      - ./pgdata:/var/lib/postgresql/data
+      - ./.pgdata:/var/lib/postgresql/data
     ports:
       - '5432:5432'
 
   cache:
     image: redis
+    container_name: lireddit-redis
     volumes:
-      - ./cachedata:/data
+      - ./.cachedata:/data
     ports:
       - '6379:6379'
