@@ -7,7 +7,7 @@ export class User {
 
   @Field(() => Int)
   @PrimaryKey()
-  id!: Number;
+  id!: number;
 
   @Field(() => String)
   @Property({ type: "date"})

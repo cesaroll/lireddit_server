@@ -2,6 +2,13 @@ import {MyContext} from "../types";
 import {Arg, Ctx, Field, InputType, Mutation, ObjectType, Query, Resolver} from "type-graphql";
 import { User } from '../entities/User';
 import argon2 from "argon2";
+import "express-session";
+
+declare module "express-session" {
+  interface SessionData {
+    userId: number;
+  }
+}
 
 @InputType()
 class UserInput {
@@ -30,12 +37,79 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+
+  /* ************************** */
+  /*          Queries           */
+  /* ************************** */
+
+  /* login */
+  @Query(() => UserResponse)
+  async login(
+    @Arg('options')
+    options: UserInput,
+    @Ctx()
+    {em, req}: MyContext
+  ): Promise<UserResponse> {
+    const user = await em.findOne(User, {username: options.username});
+    if (!user) {
+      return {
+        errors: [
+          {
+            field: "username",
+            message: "Username does not exist"
+          }
+        ]
+      }
+    }
+
+    const valid = await argon2.verify(user.password, options.password);
+    if (!valid) {
+      return {
+        errors: [
+          {
+            field: "password",
+            message: "Incorrect password"
+          }
+        ]
+      }
+    }
+
+    req.session!.userId = user.id;
+
+    return {
+      user
+    };
+  }
+
+  /* me */
+  @Query(() => User, {nullable: true})
+  async me(
+    @Ctx()
+    {req, em}: MyContext
+  ) {
+
+    console.log("Session: ", req.session);
+
+    // You are not logged in
+    if (!req.session.userId) {
+      return null;
+    }
+
+    const user = await em.findOne(User, {id: req.session.userId});
+    return user;
+  }
+
+  /* ************************** */
+  /*          Mutations         */
+  /* ************************** */
+
+  /* register */
   @Mutation(() => UserResponse)
   async register(
     @Arg('options')
     options: UserInput,
     @Ctx()
-    {em}: MyContext
+    {em, req}: MyContext
   ): Promise<UserResponse> {
     if (options.username.length <= 2) {
       return {
@@ -94,44 +168,13 @@ export class UserResolver {
       }
     }
 
+    // Set user id session
+    // this will set a cookie on the user
+    // keep them logged in
+    req.session!.userId = user.id;
+
     return {
       user: user
-    };
-  }
-
-  @Query(() => UserResponse)
-  async login(
-    @Arg('options')
-    options: UserInput,
-    @Ctx()
-    {em}: MyContext
-  ): Promise<UserResponse> {
-    const user = await em.findOne(User, {username: options.username});
-    if (!user) {
-      return {
-        errors: [
-          {
-            field: "username",
-            message: "Username does not exist"
-          }
-        ]
-      }
-    }
-
-    const valid = await argon2.verify(user.password, options.password);
-    if (!valid) {
-      return {
-        errors: [
-          {
-            field: "password",
-            message: "Incorrect password"
-          }
-        ]
-      }
-    }
-
-    return {
-      user
     };
   }
 }

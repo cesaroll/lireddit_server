@@ -4,6 +4,12 @@ import { MyContext } from '../types';
 
 @Resolver()
 export class PostResolver {
+
+  /* ************************** */
+  /*          Queries           */
+  /* ************************** */
+
+  /* posts */
   @Query(() => [Post])
   posts(
     @Ctx()
@@ -20,6 +26,7 @@ export class PostResolver {
     );
   }
 
+  /* post */
   @Query(() => Post, {nullable: true})
   post(
     @Arg('id', () => Int)
@@ -30,6 +37,11 @@ export class PostResolver {
     return ctx.em.findOne(Post, {id});
   }
 
+  /* ************************** */
+  /*          Mutations         */
+  /* ************************** */
+
+  /* createPost */
   @Mutation(() => Post)
   async createPost(
     @Arg('title', () => String)
@@ -42,6 +54,7 @@ export class PostResolver {
     return post;
   }
 
+  /* updatePost */
   @Mutation(() => Post, {nullable: true})
   async updatePost(
     @Arg('id')
@@ -60,6 +73,7 @@ export class PostResolver {
     return post;
   }
 
+  /* deletePost */
   @Mutation(() => Boolean)
   async deletePost(
     @Arg('id')
