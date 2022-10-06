@@ -37,57 +37,16 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
-
   /* ************************** */
   /*          Queries           */
   /* ************************** */
 
-  /* login */
-  @Query(() => UserResponse)
-  async login(
-    @Arg('options')
-    options: UserInput,
-    @Ctx()
-    {em, req}: MyContext
-  ): Promise<UserResponse> {
-    const user = await em.findOne(User, {username: options.username});
-    if (!user) {
-      return {
-        errors: [
-          {
-            field: "username",
-            message: "Username does not exist"
-          }
-        ]
-      }
-    }
-
-    const valid = await argon2.verify(user.password, options.password);
-    if (!valid) {
-      return {
-        errors: [
-          {
-            field: "password",
-            message: "Incorrect password"
-          }
-        ]
-      }
-    }
-
-    req.session!.userId = user.id;
-
-    return {
-      user
-    };
-  }
-
   /* me */
-  @Query(() => User, {nullable: true})
+  @Query(() => User, { nullable: true })
   async me(
     @Ctx()
-    {req, em}: MyContext
+    { req, em }: MyContext
   ) {
-
     console.log("Session: ", req.session);
 
     // You are not logged in
@@ -95,7 +54,7 @@ export class UserResolver {
       return null;
     }
 
-    const user = await em.findOne(User, {id: req.session.userId});
+    const user = await em.findOne(User, { id: req.session.userId });
     return user;
   }
 
@@ -106,19 +65,19 @@ export class UserResolver {
   /* register */
   @Mutation(() => UserResponse)
   async register(
-    @Arg('options')
+    @Arg("options")
     options: UserInput,
     @Ctx()
-    {em, req}: MyContext
+    { em, req }: MyContext
   ): Promise<UserResponse> {
     if (options.username.length <= 2) {
       return {
         errors: [
           {
             field: "username",
-            message: "User name must be 3 chars long or more"
-          }
-        ]
+            message: "User name must be 3 chars long or more",
+          },
+        ],
       };
     }
 
@@ -127,24 +86,21 @@ export class UserResolver {
         errors: [
           {
             field: "password",
-            message: "Password must be 4 chars long or more"
-          }
-        ]
+            message: "Password must be 4 chars long or more",
+          },
+        ],
       };
     }
 
     const hashedPassword = await argon2.hash(options.password);
-    const user = em.create(
-      User,
-      {
-        username: options.username,
-        password: hashedPassword
-      }
-    );
+    const user = em.create(User, {
+      username: options.username,
+      password: hashedPassword,
+    });
 
     try {
       await em.persistAndFlush(user);
-    } catch(err) {
+    } catch (err) {
       console.log(err);
 
       if (err.code === "23505" || err.detail.includes("already exists")) {
@@ -152,20 +108,20 @@ export class UserResolver {
           errors: [
             {
               field: "username",
-              message: "username is already taken"
-            }
-          ]
-        }
+              message: "username is already taken",
+            },
+          ],
+        };
       }
 
       return {
         errors: [
           {
             field: "username",
-            message: err.detail
-          }
-        ]
-      }
+            message: err.detail,
+          },
+        ],
+      };
     }
 
     // Set user id session
@@ -174,7 +130,46 @@ export class UserResolver {
     req.session!.userId = user.id;
 
     return {
-      user: user
+      user: user,
+    };
+  }
+
+  /* login */
+  @Mutation(() => UserResponse)
+  async login(
+    @Arg("options")
+    options: UserInput,
+    @Ctx()
+    { em, req }: MyContext
+  ): Promise<UserResponse> {
+    const user = await em.findOne(User, { username: options.username });
+    if (!user) {
+      return {
+        errors: [
+          {
+            field: "username",
+            message: "Username does not exist",
+          },
+        ],
+      };
+    }
+
+    const valid = await argon2.verify(user.password, options.password);
+    if (!valid) {
+      return {
+        errors: [
+          {
+            field: "password",
+            message: "Incorrect password",
+          },
+        ],
+      };
+    }
+
+    req.session!.userId = user.id;
+
+    return {
+      user,
     };
   }
 }
