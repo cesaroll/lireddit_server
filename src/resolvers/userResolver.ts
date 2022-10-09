@@ -3,6 +3,7 @@ import {Arg, Ctx, Field, InputType, Mutation, ObjectType, Query, Resolver} from 
 import { User } from '../entities/User';
 import argon2 from "argon2";
 import "express-session";
+import { COOKIE_NAME } from "src/utils/constants";
 
 declare module "express-session" {
   interface SessionData {
@@ -19,7 +20,7 @@ class UserInput {
 }
 
 @ObjectType()
-class FieldError{
+class FieldError {
   @Field()
   field: string;
   @Field()
@@ -28,10 +29,10 @@ class FieldError{
 
 @ObjectType()
 class UserResponse {
-  @Field(() => [FieldError], {nullable: true})
+  @Field(() => [FieldError], { nullable: true })
   errors?: FieldError[];
 
-  @Field(() => User, {nullable: true})
+  @Field(() => User, { nullable: true })
   user?: User;
 }
 
@@ -171,5 +172,23 @@ export class UserResolver {
     return {
       user,
     };
+  }
+
+  @Mutation(() => Boolean)
+  async logout(
+    @Ctx()
+    { req, res }: MyContext
+  ): Promise<Boolean> {
+    return new Promise((resolve) =>
+      req.session.destroy((err) => {
+        res.clearCookie(COOKIE_NAME);
+        if (err) {
+          console.log(err);
+          resolve(false);
+          return;
+        }
+        resolve(true);
+      })
+    );
   }
 }
