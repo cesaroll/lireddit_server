@@ -1,4 +1,4 @@
-import { sleep } from "src/utils/sleep";
+import { sleep } from "../utils/sleep";
 import { Arg, Ctx, Int, Mutation, Query, Resolver } from "type-graphql";
 import { Post } from "../entities/Post";
 import { MyContext } from "../types";
