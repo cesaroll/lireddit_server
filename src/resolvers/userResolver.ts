@@ -3,7 +3,7 @@ import {Arg, Ctx, Field, InputType, Mutation, ObjectType, Query, Resolver} from 
 import { User } from '../entities/User';
 import argon2 from "argon2";
 import "express-session";
-import { COOKIE_NAME } from "src/utils/constants";
+import { COOKIE_NAME } from "../utils/constants";
 
 declare module "express-session" {
   interface SessionData {
