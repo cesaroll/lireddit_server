@@ -15,7 +15,6 @@ export class PostResolver {
     @Ctx()
     { em }: MyContext
   ): Promise<Post[]> {
-    await sleep(3000);
     return em.find(
       Post,
       {},
