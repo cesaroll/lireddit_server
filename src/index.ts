@@ -8,10 +8,10 @@ import {buildSchema} from "type-graphql";
 import {HelloResolver} from "./resolvers/helloResolver";
 import {PostResolver} from "./resolvers/postResolver";
 import {UserResolver} from "./resolvers/userResolver";
-import {createClient} from "redis";
+import Redis from "ioredis";
 import session from "express-session";
 import connectRedis from "connect-redis";
-import {MyContext} from "./types";
+import { MyContext } from "./types";
 import cors from "cors";
 
 const main = async () => {
@@ -25,8 +25,11 @@ const main = async () => {
 
   // redis@v4
   // const { createClient } = require("redis");
-  const redisClient: any = createClient({ legacyMode: true });
-  redisClient.connect().catch(console.error);
+  // const redisClient: any = createClient({ legacyMode: true });
+  // redisClient.connect().catch(console.error);
+
+  const redis = new Redis();
+  // redis.connect().catch(console.error);
 
   app.use(
     cors({
@@ -39,7 +42,7 @@ const main = async () => {
     session({
       name: COOKIE_NAME,
       store: new RedisStore({
-        client: redisClient,
+        client: redis,
         disableTouch: true,
       }),
       cookie: {
@@ -59,7 +62,12 @@ const main = async () => {
       resolvers: [HelloResolver, PostResolver, UserResolver],
       validate: false,
     }),
-    context: ({ req, res }): MyContext => ({ em: orm.em.fork(), req, res }),
+    context: ({ req, res }): MyContext => ({
+      em: orm.em.fork(),
+      redis,
+      req,
+      res,
+    }),
   });
 
   await apolloServer.start();

@@ -11,9 +11,11 @@ import {
 import { User } from "../entities/User";
 import argon2 from "argon2";
 import "express-session";
-import { COOKIE_NAME } from "../utils/constants";
+import { COOKIE_NAME, FORGOT_PASSWORD_PREFIX } from "../utils/constants";
 import { UserInput } from "../models/UserInput";
 import { validateRegister } from "../validators/validateRegister";
+import { sendEmail } from "../utils/sendEmail";
+import { v4 } from "uuid";
 
 declare module "express-session" {
   interface SessionData {
@@ -187,14 +189,32 @@ export class UserResolver {
   }
 
   /** forgot password */
-  // @Mutation(() => Boolean)
-  // async forgotPassword(
-  //   @Arg("email")
-  //   email: string,
-  //   @Ctx()
-  //   { em, req, res }: MyContext
-  // ) {
-  //   // const user = await em.findOne(User, {email});
-  //   return true;
-  // }
+  @Mutation(() => Boolean)
+  async forgotPassword(
+    @Arg("email")
+    email: string,
+    @Ctx()
+    { em, redis }: MyContext
+  ): Promise<Boolean> {
+    const user = await em.findOne(User, { email });
+    if (!user) {
+      // Email does not exist in db. Do nothing
+      return true;
+    }
+
+    const token = v4();
+
+    await redis.set(
+      FORGOT_PASSWORD_PREFIX + token,
+      user.id,
+      "EX",
+      1000 * 60 * 60
+    );
+
+    await sendEmail(
+      email,
+      `<a href="http://localhost:3000/change-password/${token}">reset password</a>`
+    );
+    return true;
+  }
 }
