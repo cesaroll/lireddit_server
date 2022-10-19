@@ -1,35 +1,27 @@
 import "reflect-metadata";
-import { MikroORM } from "@mikro-orm/core";
-import mikroOrmConfig from "./mikro-orm.config";
 import { COOKIE_NAME, __prod__ } from "./utils/constants";
 import express from "express";
-import {ApolloServer} from "apollo-server-express";
-import {buildSchema} from "type-graphql";
-import {HelloResolver} from "./resolvers/helloResolver";
-import {PostResolver} from "./resolvers/postResolver";
-import {UserResolver} from "./resolvers/userResolver";
+import { ApolloServer } from "apollo-server-express";
+import { buildSchema } from "type-graphql";
+import { HelloResolver } from "./resolvers/helloResolver";
+import { PostResolver } from "./resolvers/postResolver";
+import { UserResolver } from "./resolvers/userResolver";
 import Redis from "ioredis";
 import session from "express-session";
 import connectRedis from "connect-redis";
 import { MyContext } from "./types";
 import cors from "cors";
+import { DataSource } from "typeorm";
+import typeOrmConfig from "./config/type-orm.config";
 
 const main = async () => {
-  const orm = await MikroORM.init(mikroOrmConfig);
-  await orm.getMigrator().up();
-  // const em = orm.em.fork();
+  await new DataSource(typeOrmConfig).initialize();
 
   const app = express();
 
   const RedisStore = connectRedis(session);
 
-  // redis@v4
-  // const { createClient } = require("redis");
-  // const redisClient: any = createClient({ legacyMode: true });
-  // redisClient.connect().catch(console.error);
-
   const redis = new Redis();
-  // redis.connect().catch(console.error);
 
   app.use(
     cors({
@@ -63,7 +55,6 @@ const main = async () => {
       validate: false,
     }),
     context: ({ req, res }): MyContext => ({
-      em: orm.em.fork(),
       redis,
       req,
       res,
